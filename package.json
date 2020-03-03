@@ -1,12 +1,13 @@
 {
   "name": "@diff./redis-client",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "upload": "tsc; npm publish --access public"
+    "lint": "eslint . --ext .ts",
+    "deploy": "tsc; npm publish --access public"
   },
   "repository": {
     "type": "git",
@@ -15,13 +16,26 @@
   "homepage": "http://playboard.co",
   "author": "DIFF.",
   "license": "ISC",
-  "devDependencies": {
-    "@types/node": "^13.7.0",
-    "@types/ioredis": "^4.14.7"
-  },
   "dependencies": {
+    "@types/node": "^13.7.0",
+    "@types/ioredis": "^4.14.7",
     "@diff./config-manager": "^1.1.0",
     "ioredis": "^4.14.1"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.7",
+    "@types/mocha": "^5.2.7",
+    "@typescript-eslint/eslint-plugin": "^2.12.0",
+    "@typescript-eslint/parser": "^1.13.0",
+    "@typescript-eslint/typescript-estree": "^1.13.0",
+    "chai": "^4.2.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.7.0",
+    "eslint-plugin-no-null": "^1.0.2",
+    "eslint-plugin-prettier": "^3.1.2",
+    "mocha": "^6.2.2",
+    "prettier": "^1.19.1",
+    "typescript": "^3.7.3"
   },
   "description": ""
 }
