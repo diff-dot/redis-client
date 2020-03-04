@@ -1,4 +1,6 @@
-export interface RedisConfig {
+import { ConfigTemplate } from '@diff./config-manager';
+
+export interface RedisConfig extends ConfigTemplate {
   redis: {
     hosts?: {
       [key: string]: {
