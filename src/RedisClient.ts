@@ -1,7 +1,8 @@
 'use strict';
 
 import IORedis from 'ioredis';
-import { ConfigManager, RedisConfig } from '@diff./config-manager';
+import { ConfigManager } from '@diff./config-manager';
+import { RedisConfig } from './RedisConfig';
 
 const retryStrategy = function(times: number) {
   return Math.min(times * 300, 10000);
