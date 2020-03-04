@@ -11,7 +11,7 @@ export class RedisClient {
   private static readonly hostClientMap: Map<string, IORedis.Redis> = new Map();
   private static readonly custerClientMap: Map<string, IORedis.Cluster> = new Map();
 
-  public static host(config: ConfigManager<RedisConfig>, host: string): IORedis.Redis {
+  public static host(host: string, config: ConfigManager<RedisConfig>): IORedis.Redis {
     let client = this.hostClientMap.get(host);
     if (client) return client;
 
@@ -29,7 +29,7 @@ export class RedisClient {
     return client;
   }
 
-  public static cluster(config: ConfigManager<RedisConfig>, host: string): IORedis.Cluster {
+  public static cluster(host: string, config: ConfigManager<RedisConfig>): IORedis.Cluster {
     let client = this.custerClientMap.get(host);
     if (client) return client;
 
