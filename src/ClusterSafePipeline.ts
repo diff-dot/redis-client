@@ -1,4 +1,4 @@
-import { Redis } from 'ioredis';
+import { Redis, Cluster } from 'ioredis';
 import ArrayUtils from './util/ArrayUtils';
 import { PipelineCmd } from './PipelineCmd';
 
@@ -12,11 +12,11 @@ export type PipelineResult = { successed: { cmd: string[]; result: any }[]; fail
 export type PipelineAddParams = { key: string; cmd: PipelineCmd };
 
 export class ClusterSafePipeline {
-  public readonly client: Redis;
+  public readonly client: Redis | Cluster;
   private readonly disableClusterSafe: boolean;
 
   private cmds: Map<string, PipelineCmd[]> = new Map();
-  public constructor(args: { client: Redis; disableClusterSafe?: boolean }) {
+  public constructor(args: { client: Redis | Cluster; disableClusterSafe?: boolean }) {
     const { client, disableClusterSafe = false } = args;
     this.client = client;
     this.disableClusterSafe = disableClusterSafe;
@@ -85,7 +85,7 @@ export class ClusterSafePipeline {
 
     const chunks = ArrayUtils.chunk(cmds, BULK_REQUEST_SIZE);
     for (const chunk of chunks) {
-      const pipeline = this.client.pipeline(chunk.map(v => v.toArray()));
+      const pipeline = (this.client as Redis).pipeline(chunk.map(v => v.toArray()));
       const chunkResult = await pipeline.exec();
       for (let i = 0; i < chunkResult.length; i++) {
         const [error, result] = chunkResult[i];
