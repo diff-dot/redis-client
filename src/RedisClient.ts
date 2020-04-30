@@ -1,8 +1,8 @@
 'use strict';
 
 import IORedis from 'ioredis';
-import { HostOptions } from './config/HostOptions';
-import { ClusterOptions } from './config/ClusterOptions';
+import { HostOptions } from './option/HostOptions';
+import { ClusterOptions } from './option/ClusterOptions';
 
 const retryStrategy = function(times: number) {
   return Math.min(times * 300, 10000);
