@@ -1,5 +1,5 @@
 export { RedisClient } from './RedisClient';
-export { HostOptions } from './option/HostOptions';
-export { ClusterOptions } from './option/ClusterOptions';
+export { RedisHostOptions as HostOptions } from './option/RedisHostOptions';
+export { RedisClusterOptions as ClusterOptions } from './option/RedisClusterOptions';
 export { PipelineCmd } from './PipelineCmd';
 export { ClusterSafePipeline } from './ClusterSafePipeline';
