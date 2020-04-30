@@ -1,8 +1,8 @@
 'use strict';
 
 import IORedis from 'ioredis';
-import { ConfigManager } from '@diff./config-manager';
-import { RedisConfig } from './RedisConfig';
+import { HostOptions } from './config/HostOptions';
+import { ClusterOptions } from './config/ClusterOptions';
 
 const retryStrategy = function(times: number) {
   return Math.min(times * 300, 10000);
@@ -11,50 +11,39 @@ const retryStrategy = function(times: number) {
 export class RedisClient {
   private static readonly hostClientMap: Map<string, IORedis.Redis> = new Map();
   private static readonly custerClientMap: Map<string, IORedis.Cluster> = new Map();
-  private static config?: ConfigManager<RedisConfig>;
 
-  public static setConfig(config: ConfigManager<RedisConfig>) {
-    this.config = config;
-  }
+  public static host(options: HostOptions): IORedis.Redis {
+    const cacheKey = JSON.stringify(options);
 
-  public static host(host: string): IORedis.Redis {
-    if (!this.config) throw Error('No preference has been specified.');
-
-    let client = this.hostClientMap.get(host);
+    let client = this.hostClientMap.get(cacheKey);
     if (client) return client;
 
-    const connInfo = this.config.data.redis.hosts ? this.config.data.redis.hosts[host] : undefined;
-    if (!connInfo) throw new Error(`undefined redis host : ${host}`);
-
     client = new IORedis({
-      host: connInfo.host,
-      port: connInfo.port,
+      host: options.host,
+      port: options.port,
       retryStrategy: retryStrategy,
-      keyPrefix: this.config.data.redis.keyPrefix
+      keyPrefix: options.keyPrefix
     });
 
-    this.hostClientMap.set(host, client);
+    this.hostClientMap.set(cacheKey, client);
     return client;
   }
 
-  public static cluster(host: string): IORedis.Cluster {
-    if (!this.config) throw Error('No preference has been specified.');
+  public static cluster(options: ClusterOptions): IORedis.Cluster {
+    const cacheKey = JSON.stringify(options);
 
-    let client = this.custerClientMap.get(host);
+    let client = this.custerClientMap.get(cacheKey);
     if (client) return client;
 
-    const connInfo = this.config.data.redis.clusters ? this.config.data.redis.clusters[host] : undefined;
-    if (!connInfo) throw new Error(`undefined redis host : ${host}`);
-
-    client = new IORedis.Cluster(connInfo.nodes, {
-      scaleReads: connInfo.scaleReads,
+    client = new IORedis.Cluster(options.nodes, {
+      scaleReads: options.scaleReads,
       clusterRetryStrategy: retryStrategy,
       redisOptions: {
-        keyPrefix: this.config.data.redis.keyPrefix
+        keyPrefix: options.keyPrefix
       }
     });
 
-    this.custerClientMap.set(host, client);
+    this.custerClientMap.set(cacheKey, client);
     return client;
   }
 }
