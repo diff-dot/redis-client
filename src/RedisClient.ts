@@ -13,9 +13,9 @@ export class RedisClient {
   private static readonly custerClientMap: Map<string, IORedis.Cluster> = new Map();
 
   public static host(options: RedisHostOptions): IORedis.Redis {
-    const cacheKey = JSON.stringify(options);
+    const connectionKey = options.connectionKey || JSON.stringify(options);
 
-    let client = this.hostClientMap.get(cacheKey);
+    let client = this.hostClientMap.get(connectionKey);
     if (client) return client;
 
     client = new IORedis({
@@ -25,14 +25,14 @@ export class RedisClient {
       keyPrefix: options.keyPrefix
     });
 
-    this.hostClientMap.set(cacheKey, client);
+    this.hostClientMap.set(connectionKey, client);
     return client;
   }
 
   public static cluster(options: RedisClusterOptions): IORedis.Cluster {
-    const cacheKey = JSON.stringify(options);
+    const connectionKey = options.connectionKey || JSON.stringify(options);
 
-    let client = this.custerClientMap.get(cacheKey);
+    let client = this.custerClientMap.get(connectionKey);
     if (client) return client;
 
     client = new IORedis.Cluster(options.nodes, {
@@ -43,7 +43,7 @@ export class RedisClient {
       }
     });
 
-    this.custerClientMap.set(cacheKey, client);
+    this.custerClientMap.set(connectionKey, client);
     return client;
   }
 }
