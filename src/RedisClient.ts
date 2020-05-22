@@ -4,8 +4,12 @@ import IORedis from 'ioredis';
 import { RedisHostOptions } from './option/RedisHostOptions';
 import { RedisClusterOptions } from './option/RedisClusterOptions';
 
+const MAX_RETRY_COUNT = 3;
+const RETRY_INC_DURATION = 500;
+const RETRY_MAX_DURATION = 10000;
+
 const retryStrategy = function(times: number) {
-  return Math.min(times * 300, 10000);
+  return times <= MAX_RETRY_COUNT ? Math.min(times * RETRY_INC_DURATION, RETRY_MAX_DURATION) : null;
 };
 
 export class RedisClient {
@@ -16,7 +20,9 @@ export class RedisClient {
     const connectionKey = options.connectionKey || JSON.stringify(options);
 
     let client = this.hostClientMap.get(connectionKey);
-    if (client) return client;
+    if (client && client.status === 'ready') {
+      return client;
+    }
 
     client = new IORedis({
       host: options.host,
@@ -33,7 +39,9 @@ export class RedisClient {
     const connectionKey = options.connectionKey || JSON.stringify(options);
 
     let client = this.custerClientMap.get(connectionKey);
-    if (client) return client;
+    if (client && client.status === 'ready') {
+      return client;
+    }
 
     client = new IORedis.Cluster(options.nodes, {
       scaleReads: options.scaleReads,
