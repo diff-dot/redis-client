@@ -13,13 +13,15 @@ export type PipelineAddParams = { key: string; cmd: PipelineCmd };
 
 export class ClusterSafePipeline {
   public readonly client: Redis | Cluster;
-  private readonly disableClusterSafe: boolean;
+  private readonly isCluster: boolean;
+
+  // console.log('status' in this.client);
 
   private cmds: Map<string, PipelineCmd[]> = new Map();
-  public constructor(args: { client: Redis | Cluster; disableClusterSafe?: boolean }) {
-    const { client, disableClusterSafe = false } = args;
+  public constructor(args: { client: Redis | Cluster }) {
+    const { client } = args;
     this.client = client;
-    this.disableClusterSafe = disableClusterSafe;
+    this.isCluster = 'nodes' in client;
   }
 
   public clear(): void {
@@ -53,7 +55,7 @@ export class ClusterSafePipeline {
   }
 
   public async run(): Promise<PipelineResult> {
-    if (this.disableClusterSafe) {
+    if (!this.isCluster) {
       const cmds: PipelineCmd[] = [];
       for (const cmdsByKey of this.cmds.values()) {
         cmds.push(...cmdsByKey);
