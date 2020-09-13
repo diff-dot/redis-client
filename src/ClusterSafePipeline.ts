@@ -37,10 +37,10 @@ export class ClusterSafePipeline {
     return this.queue.length;
   }
 
-  public add(params: PipelineAddParams): void;
-  public add(paramsArray: PipelineAddParams[]): void;
-  public add(key: string, cmd: PipelineCmd): void;
-  public add(keyOrParams: string | PipelineAddParams | PipelineAddParams[], cmd?: PipelineCmd): void {
+  public add(params: PipelineAddParams): ClusterSafePipeline;
+  public add(paramsArray: PipelineAddParams[]): ClusterSafePipeline;
+  public add(key: string, cmd: PipelineCmd): ClusterSafePipeline;
+  public add(keyOrParams: string | PipelineAddParams | PipelineAddParams[], cmd?: PipelineCmd): ClusterSafePipeline {
     if (Array.isArray(keyOrParams)) {
       for (const item of keyOrParams) {
         this.queue.push({ key: item.key, cmd: item.cmd, seq: this.seqCursor });
@@ -53,6 +53,8 @@ export class ClusterSafePipeline {
       this.queue.push({ key: keyOrParams, cmd: cmd, seq: this.seqCursor });
       this.seqCursor++;
     }
+
+    return this;
   }
 
   public async run(): Promise<PipelineResult> {
