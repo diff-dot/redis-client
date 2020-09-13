@@ -3,37 +3,38 @@ import ArrayUtils from './util/ArrayUtils';
 import { PipelineCmd } from './PipelineCmd';
 
 /**
- * 키별로 pipeline 을 구성하여 cluster mode에서도 안전하게 일괄 요청이 가능하도록 지원
+ * 키별로 pipeline 을 분리하여 cluster mode에서도 안전하게 일괄 요청이 가능하도록 지원
  */
 const BULK_REQUEST_SIZE = 500;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type PipelineResult = { successed: { cmd: string[]; result: any }[]; failed: { cmd: string[]; result: Error }[] };
+export type PipelineResult = { cmd: PipelineCmd; result?: any; error?: Error }[];
 export type PipelineAddParams = { key: string; cmd: PipelineCmd };
+export type PipelineQueue = { key: string; cmd: PipelineCmd; seq: number }[];
 
 export class ClusterSafePipeline {
   public readonly client: Redis | Cluster;
   private readonly isCluster: boolean;
 
-  // console.log('status' in this.client);
+  private queue: PipelineQueue;
+  private seqCursor: number;
 
-  private cmds: Map<string, PipelineCmd[]> = new Map();
   public constructor(args: { client: Redis | Cluster }) {
     const { client } = args;
     this.client = client;
-    this.isCluster = 'nodes' in client;
+    this.isCluster = this.client.constructor.name == 'Cluster';
+
+    this.queue = [];
+    this.seqCursor = 0;
   }
 
   public clear(): void {
-    this.cmds.clear();
+    this.seqCursor = 0;
+    this.queue = [];
   }
 
   public size(): number {
-    let totalSize = 0;
-    this.cmds.forEach(cmds => {
-      totalSize += cmds.length;
-    });
-    return totalSize;
+    return this.queue.length;
   }
 
   public add(params: PipelineAddParams): void;
@@ -42,60 +43,61 @@ export class ClusterSafePipeline {
   public add(keyOrParams: string | PipelineAddParams | PipelineAddParams[], cmd?: PipelineCmd): void {
     if (Array.isArray(keyOrParams)) {
       for (const item of keyOrParams) {
-        if (!this.cmds.has(item.key)) this.cmds.set(item.key, []);
-        this.cmds.get(item.key)?.push(item.cmd);
+        this.queue.push({ key: item.key, cmd: item.cmd, seq: this.seqCursor });
+        this.seqCursor++;
       }
     } else if (typeof keyOrParams === 'object') {
-      if (!this.cmds.has(keyOrParams.key)) this.cmds.set(keyOrParams.key, []);
-      this.cmds.get(keyOrParams.key)?.push(keyOrParams.cmd);
-    } else {
-      if (!this.cmds.has(keyOrParams)) this.cmds.set(keyOrParams, []);
-      if (cmd) this.cmds.get(keyOrParams)?.push(cmd);
+      this.queue.push({ key: keyOrParams.key, cmd: keyOrParams.cmd, seq: this.seqCursor });
+      this.seqCursor++;
+    } else if (cmd) {
+      this.queue.push({ key: keyOrParams, cmd: cmd, seq: this.seqCursor });
+      this.seqCursor++;
     }
   }
 
   public async run(): Promise<PipelineResult> {
-    if (!this.isCluster) {
-      const cmds: PipelineCmd[] = [];
-      for (const cmdsByKey of this.cmds.values()) {
-        cmds.push(...cmdsByKey);
+    if (this.isCluster) {
+      // 키별로 큐 분리
+      const groupByKey: Map<string, PipelineQueue> = new Map();
+      for (const cmd of this.queue) {
+        let keyQueue = groupByKey.get(cmd.key);
+        if (!keyQueue) {
+          keyQueue = [];
+          groupByKey.set(cmd.key, keyQueue);
+        }
+
+        keyQueue.push(cmd);
       }
-      return this.runAtOnce(cmds);
+
+      // 키별 큐 실행
+      const result: PipelineResult = [];
+      for (const key of groupByKey.keys()) {
+        const keyQueue = groupByKey.get(key);
+        if (!keyQueue) continue;
+
+        // 큐에 쌓인 커멘드 순서와 결과의 순서를 통일
+        const particalRes = await this.runAtOnce(keyQueue);
+        for (let i = 0; i < particalRes.length; i++) {
+          if (!particalRes[i]) continue;
+          result[i] = particalRes[i];
+        }
+      }
+      return result;
     } else {
-      const results: PipelineResult = {
-        successed: [],
-        failed: []
-      };
-
-      for (const key of this.cmds.keys()) {
-        const cmdsByKey = this.cmds.get(key);
-        if (!cmdsByKey) continue;
-
-        const res = await this.runAtOnce(cmdsByKey);
-        results.successed.push(...res.successed);
-        results.failed.push(...res.failed);
-      }
-      return results;
+      return this.runAtOnce(this.queue);
     }
   }
 
-  private async runAtOnce(cmds: PipelineCmd[]): Promise<PipelineResult> {
-    const results: PipelineResult = {
-      successed: [],
-      failed: []
-    };
+  private async runAtOnce(cmds: PipelineQueue): Promise<PipelineResult> {
+    const results: PipelineResult = [];
 
     const chunks = ArrayUtils.chunk(cmds, BULK_REQUEST_SIZE);
     for (const chunk of chunks) {
-      const pipeline = (this.client as Redis).pipeline(chunk.map(v => v.toArray()));
+      const pipeline = (this.client as Redis).pipeline(chunk.map(q => [...q.cmd.toArray()]));
       const chunkResult = await pipeline.exec();
       for (let i = 0; i < chunkResult.length; i++) {
         const [error, result] = chunkResult[i];
-        if (error instanceof Error) {
-          results.failed.push({ cmd: chunk[i].toArray(), result });
-        } else {
-          results.successed.push({ cmd: chunk[i].toArray(), result });
-        }
+        results[chunk[i].seq] = { cmd: chunk[i].cmd, result, error: error || undefined };
       }
     }
 

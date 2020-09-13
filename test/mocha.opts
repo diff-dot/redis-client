@@ -1,0 +1,7 @@
+--require ./test/env.ts
+--require ts-node/register
+--watch-extensions ts
+--full-trace
+--reporter spec
+--recursive
+--timeout 20000000
