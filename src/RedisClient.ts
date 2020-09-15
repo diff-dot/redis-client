@@ -1,9 +1,9 @@
 'use strict';
 
-import IORedis from 'ioredis';
 import { RedisHostOptions } from './option/RedisHostOptions';
 import { RedisClusterOptions } from './option/RedisClusterOptions';
 import { RedisBaseOptions } from './option/RedisBaseOptions';
+import IORedis from 'ioredis';
 
 const MAX_RETRY_COUNT = 3;
 const RETRY_INC_DURATION = 500;
@@ -58,6 +58,7 @@ export class RedisClient {
 
   public static client(options: RedisHostOptions): IORedis.Redis;
   public static client(options: RedisClusterOptions): IORedis.Cluster;
+  public static client(options: RedisHostOptions | RedisClusterOptions): IORedis.Cluster | IORedis.Redis;
   public static client(options: RedisHostOptions | RedisClusterOptions): IORedis.Cluster | IORedis.Redis {
     if (this.isRedisClusterOptions(options)) {
       return this.cluster(options);
