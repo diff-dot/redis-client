@@ -5,6 +5,7 @@ const TEST_KEY1 = 'testKey1';
 const TEST_KEY2 = 'testKey2';
 
 const client = RedisClient.cluster({
+  type: 'cluster',
   nodes: [
     {
       host: '127.0.0.1',

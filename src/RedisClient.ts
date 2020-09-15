@@ -3,6 +3,7 @@
 import IORedis from 'ioredis';
 import { RedisHostOptions } from './option/RedisHostOptions';
 import { RedisClusterOptions } from './option/RedisClusterOptions';
+import { RedisOptions } from './option/RedisOptions';
 
 const MAX_RETRY_COUNT = 3;
 const RETRY_INC_DURATION = 500;
@@ -53,5 +54,19 @@ export class RedisClient {
 
     this.custerClientMap.set(connectionKey, client);
     return client;
+  }
+
+  public static client(options: RedisHostOptions): IORedis.Redis;
+  public static client(options: RedisClusterOptions): IORedis.Cluster;
+  public static client(options: RedisHostOptions | RedisClusterOptions): IORedis.Cluster | IORedis.Redis {
+    if (this.isRedisClusterOptions(options)) {
+      return this.cluster(options);
+    } else {
+      return this.host(options);
+    }
+  }
+
+  private static isRedisClusterOptions(options: RedisOptions): options is RedisClusterOptions {
+    return options.type === 'cluster';
   }
 }
