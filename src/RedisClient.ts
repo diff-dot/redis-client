@@ -3,7 +3,7 @@
 import IORedis from 'ioredis';
 import { RedisHostOptions } from './option/RedisHostOptions';
 import { RedisClusterOptions } from './option/RedisClusterOptions';
-import { RedisOptions } from './option/RedisOptions';
+import { RedisBaseOptions } from './option/RedisBaseOptions';
 
 const MAX_RETRY_COUNT = 3;
 const RETRY_INC_DURATION = 500;
@@ -66,7 +66,7 @@ export class RedisClient {
     }
   }
 
-  private static isRedisClusterOptions(options: RedisOptions): options is RedisClusterOptions {
+  private static isRedisClusterOptions(options: RedisBaseOptions): options is RedisClusterOptions {
     return options.type === 'cluster';
   }
 }

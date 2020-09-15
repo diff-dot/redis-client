@@ -1,6 +1,6 @@
 import { ServerType } from '../type/ServerType';
 
-export interface RedisOptions {
+export interface RedisBaseOptions {
   type: ServerType;
   connectionKey?: string;
   keyPrefix?: string;
