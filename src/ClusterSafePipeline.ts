@@ -28,9 +28,11 @@ export class ClusterSafePipeline {
     this.seqCursor = 0;
   }
 
-  public clear(): void {
+  public clear(): ClusterSafePipeline {
     this.seqCursor = 0;
     this.queue = [];
+
+    return this;
   }
 
   public size(): number {
