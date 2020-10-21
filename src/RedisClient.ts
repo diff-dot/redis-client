@@ -21,9 +21,7 @@ export class RedisClient {
     const connectionKey = options.connectionKey || JSON.stringify(options);
 
     let client = this.hostClientMap.get(connectionKey);
-    if (client && client.status === 'ready') {
-      return client;
-    }
+    if (client) return client;
 
     client = new IORedis({
       host: options.host,
@@ -40,9 +38,7 @@ export class RedisClient {
     const connectionKey = options.connectionKey || JSON.stringify(options);
 
     let client = this.custerClientMap.get(connectionKey);
-    if (client && client.status === 'ready') {
-      return client;
-    }
+    if (client) return client;
 
     client = new IORedis.Cluster(options.nodes, {
       scaleReads: options.scaleReads,
