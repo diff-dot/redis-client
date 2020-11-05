@@ -5,12 +5,11 @@ import { RedisClusterOptions } from './option/RedisClusterOptions';
 import { RedisBaseOptions } from './option/RedisBaseOptions';
 import IORedis from 'ioredis';
 
-const MAX_RETRY_COUNT = 3;
-const RETRY_INC_DURATION = 500;
-const RETRY_MAX_DURATION = 10000;
+const RETRY_INC_DURATION = 500; // ms
+const RETRY_MAX_DURATION = 5 * 1000; // ms
 
 const retryStrategy = function(times: number) {
-  return times <= MAX_RETRY_COUNT ? Math.min(times * RETRY_INC_DURATION, RETRY_MAX_DURATION) : null;
+  return Math.min(times * RETRY_INC_DURATION, RETRY_MAX_DURATION);
 };
 
 export class RedisClient {
