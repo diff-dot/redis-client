@@ -6,19 +6,6 @@ import { RedisBaseOptions } from './option/RedisBaseOptions';
 import IORedis from 'ioredis';
 
 /**
- * 클러스터와 커넥션이 연결되지 않은 상태에서 수신된 요청을 큐잉하여 접속 후 일괄 전송하는 옵션
- * API 응답 지연 등을 유발하여 연쇄적 장애를 유발할 수 있으므로 비활성화
- *
- * @see https://github.com/luin/ioredis#offline-queue
- */
-const CLUSTER_ENABLE_OFFLINE_QUEUE = false;
-
-/**
- * MAX_RETRIES_PER_REQUEST 옵션을 통해 큐일 조건을 세부 설정
- */
-const STANDALONE_ENABLE_OFFLINE_QUEUE = true;
-
-/**
  * 커넥션을 잃었을 경우 최소 0.1초 최대 1초의 간격으로 재접속 시도
  */
 const RETRY_INC_DURATION = 100; // ms
@@ -55,7 +42,6 @@ export class RedisClient {
       port: options.port,
       retryStrategy: retryStrategy,
       maxRetriesPerRequest: MAX_RETRIES_PER_REQUEST,
-      enableOfflineQueue: STANDALONE_ENABLE_OFFLINE_QUEUE,
       keyPrefix: options.keyPrefix
     });
 
@@ -72,7 +58,6 @@ export class RedisClient {
     client = new IORedis.Cluster(options.nodes, {
       scaleReads: options.scaleReads,
       clusterRetryStrategy: retryStrategy,
-      enableOfflineQueue: CLUSTER_ENABLE_OFFLINE_QUEUE,
       redisOptions: {
         keyPrefix: options.keyPrefix
       }
