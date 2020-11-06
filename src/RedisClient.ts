@@ -5,8 +5,36 @@ import { RedisClusterOptions } from './option/RedisClusterOptions';
 import { RedisBaseOptions } from './option/RedisBaseOptions';
 import IORedis from 'ioredis';
 
-const RETRY_INC_DURATION = 500; // ms
-const RETRY_MAX_DURATION = 5 * 1000; // ms
+/**
+ * 클러스터와 커넥션이 연결되지 않은 상태에서 수신된 요청을 큐잉하여 접속 후 일괄 전송하는 옵션
+ * API 응답 지연 등을 유발하여 연쇄적 장애를 유발할 수 있으므로 비활성화
+ *
+ * @see https://github.com/luin/ioredis#offline-queue
+ */
+const CLUSTER_ENABLE_OFFLINE_QUEUE = false;
+
+/**
+ * MAX_RETRIES_PER_REQUEST 옵션을 통해 큐일 조건을 세부 설정
+ */
+const STANDALONE_ENABLE_OFFLINE_QUEUE = true;
+
+/**
+ * 커넥션을 잃었을 경우 최소 0.1초 최대 1초의 간격으로 재접속 시도
+ */
+const RETRY_INC_DURATION = 100; // ms
+const RETRY_MAX_DURATION = 500; // ms
+
+/**
+ * 레디스와의 커넥션이 상실된 상태에서 요청이 수신되었을 경우
+ * MAX_RETRIES_PER_REQUEST 만큼 재접속 시도 후 성공시 일괄 결과 반환, 실패시 에러 반환
+ * ( standalone 서버 한정 옵션  )
+ *
+ * < 주의사항 >
+ * 크기를 너무 크게 설정할 경우 최대 MAX_RETRIES_PER_REQUEST*RETRY_MAX_DURATION 만큼 응답 지연이 발생할 수 있고
+ * API 서버의 경우 사용자 커넥션의 급격한 증가로 연쇄 장애를 발생시킬 수 있으므로 설정에 주의 요망
+ * @see https://github.com/luin/ioredis#auto-reconnect
+ */
+const MAX_RETRIES_PER_REQUEST = 3;
 
 const retryStrategy = function(times: number) {
   return Math.min(times * RETRY_INC_DURATION, RETRY_MAX_DURATION);
@@ -26,6 +54,8 @@ export class RedisClient {
       host: options.host,
       port: options.port,
       retryStrategy: retryStrategy,
+      maxRetriesPerRequest: MAX_RETRIES_PER_REQUEST,
+      enableOfflineQueue: STANDALONE_ENABLE_OFFLINE_QUEUE,
       keyPrefix: options.keyPrefix
     });
 
@@ -42,6 +72,7 @@ export class RedisClient {
     client = new IORedis.Cluster(options.nodes, {
       scaleReads: options.scaleReads,
       clusterRetryStrategy: retryStrategy,
+      enableOfflineQueue: CLUSTER_ENABLE_OFFLINE_QUEUE,
       redisOptions: {
         keyPrefix: options.keyPrefix
       }
