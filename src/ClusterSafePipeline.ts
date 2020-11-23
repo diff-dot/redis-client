@@ -59,6 +59,9 @@ export class ClusterSafePipeline {
     return this;
   }
 
+  /**
+   * @todo 키에 태그가 포함되어 있을 경우 같은 태그의 명령은 묶어서 실행되도록 구성
+   */
   public async run(): Promise<PipelineResult> {
     if (this.isCluster) {
       // 키별로 큐 분리
